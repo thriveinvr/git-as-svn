@@ -9,10 +9,16 @@ package svnserver.ext.gitea.mapping
 
 import org.tmatesoft.svn.core.SVNException
 import svnserver.Loggers
+import svnserver.StringHelper
 import svnserver.context.LocalContext
+import svnserver.ext.gitea.config.GiteaContext
 import svnserver.repository.git.BranchProvider
 import svnserver.repository.git.GitBranch
 import svnserver.repository.git.GitRepository
+import io.gitea.ApiException
+import io.gitea.api.RepositoryApi
+import io.gitea.model.Branch
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.util.*
 
@@ -32,8 +38,43 @@ class GiteaProject internal constructor(val context: LocalContext, val repositor
     fun initRevisions() {
         if (!isReady) {
             log.info("[{}]: initing...", context.name)
+            updateBranches()
             for (branch in repository.branches.values) branch.updateRevisions()
             isReady = true
+        }
+    }
+
+    @Throws(IOException::class, SVNException::class)
+    fun updateBranches() {
+        try {
+            val giteaContext: GiteaContext = GiteaContext.sure(context.shared)
+            val apiClient = giteaContext.connect()
+            val repositoryApi = RepositoryApi(apiClient)
+            val projectName = StringHelper.baseName(repositoryName)
+            val giteaBranches = repositoryApi.repoListBranches(owner, projectName, null, null)
+            if (giteaBranches != null) {
+                // Load discovered Gitea repository branches
+                for (giteaBranch in giteaBranches) {
+                    var branchName = StringHelper.normalizeDir(giteaBranch.name);
+                    if (repository.branches.get(branchName) == null) {
+                        log.info("[{}]: adding discovered Gitea branch {} {}...", context.name, giteaBranch.name, branchName)
+                        var newBranch = GitBranch(repository, giteaBranch.name)
+                        repository.branches[branchName] = newBranch
+                        newBranch.updateRevisions()
+                    }
+                }
+
+                // Remove repository branches no longer registered with Gitea
+                val giteaBranchNames = giteaBranches!!.map { StringHelper.normalizeDir(it.name) }
+                repository.branches.keys.removeIf {
+                    val removed = !giteaBranchNames.contains(it);
+                    if (removed) log.info("[{}]: removing unreferenced Gitea branch {}...", context.name, repository.branches[it]?.gitBranch);
+                    removed
+                }
+            }
+        } catch (e: ApiException) {
+            // Skip updating if repository branches are not available
+            return;
         }
     }
 
@@ -46,7 +87,14 @@ class GiteaProject internal constructor(val context: LocalContext, val repositor
     }
 
     override val branches: NavigableMap<String, GitBranch>
-        get() = if (isReady) repository.branches else Collections.emptyNavigableMap()
+        get() {
+            if (isReady) {
+                updateBranches()
+                return repository.branches
+            }
+            
+            return Collections.emptyNavigableMap()
+        }
 
     companion object {
         private val log = Loggers.gitea

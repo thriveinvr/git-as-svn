@@ -4,7 +4,7 @@
 :filename: _authz.adoc
 include::_feedback.adoc[]
 
-NOTE: This feature is currently only supported for `repositoryMapping: !listMapping`
+NOTE: This feature is currently only supported for `repositoryMapping: !listMapping` and `repositoryMapping: !giteaMapping`
 
 git-as-svn supports path-based authorization that allows granting (or denying) permissions to users, very similar to Subversion http://svnbook.red-bean.com/nightly/en/svn.serverconfig.pathbasedauthz.html[path-based authorization] feature.
 Typically this is done over the entire repository: a user can read the repository (or not), and they can write to the repository (or not).
@@ -205,4 +205,34 @@ repositoryMapping: !listMapping
         /:
           '$anonymous': r
           '$authenticated': rw
+----
+
+== Gitea Access Control Features
+
+When using `repositoryMapping: !giteaMapping`, the `groups` property will not be used and all group names specified for paths will be mapped to the team names of the repository's owning organization.  This allows for organization team member access to be handled through Gitea.
+
+If a team or organization member does not normally have access to a repository in the organization through Gitea, a repository deploy key ID can be specified to override commit permissions based on the user or team's path permissions.
+
+.git-as-svn.conf
+[source,yaml]
+----
+repositoryMapping: !giteaMapping
+  repositories:
+    'organizationname/repositoryname':
+      deployKey: 1
+      access:
+        /:
+          '*': none
+          '@Owners': rw
+          '@Observers': r
+          '@Developers': rw
+        /path/to/secret:
+          '@Owners': rw
+          '@Observers': none
+          '@Developers': none
+        main:/:
+          '*': none
+          '@Owners': rw
+          '@Observers': r
+          '@Developers': r
 ----
