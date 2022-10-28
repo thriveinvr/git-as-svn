@@ -88,14 +88,14 @@ internal class GiteaAccess(local: LocalContext, private val config: GiteaMapping
         environment["GITEA_REPO_ID"] = "" + repository.id
         environment["GITEA_REPO_IS_WIKI"] = "false"
         environment["GITEA_REPO_NAME"] = repository.name
-        environment["GITEA_REPO_USER"] = repository.owner.login
-        val externalId = user.externalId
+        environment["GITEA_REPO_USER_NAME"] = repository.owner.login
         environment["SSH_ORIGINAL_COMMAND"] = "git"
+        if (user.username != null)
+            environment["GITEA_PUSHER_NAME"] = if (user.realName.isNullOrEmpty()) user.username else user.realName
         if (user.email != null)
             environment["GITEA_PUSHER_EMAIL"] = user.email
-        if (externalId != null) {
+        if (user.externalId != null)
             environment["GITEA_PUSHER_ID"] = user.externalId
-        }
         val deployKey = config.repositories?.get(repository.fullName)?.deployKey
         if (deployKey != null)
             environment["GITEA_DEPLOY_KEY_ID"] = deployKey
