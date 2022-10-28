@@ -10,8 +10,11 @@ This includes:
 
 * User authentication against Gitea
 * Access control depending on user permissions in Gitea
+* Support for Gitea user or organization owned repositories
+* Usage of repository deploy keys to override commit permissions
+* Path-based authorization including support for Gitea repository teams
 * Usage of Gitea LFS server for transparent handling of LFS files for svn users
-* Automatic discovery of new repositories created in Gitea
+* Automatic discovery of new repositories and branches created in Gitea
 * Running Gitea repository hooks if any installed
 
 IMPORTANT: git-as-svn requires Sudo Gitea token

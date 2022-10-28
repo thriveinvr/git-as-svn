@@ -46,6 +46,27 @@ repositoryMapping: !giteaMapping
   #   emptyDirs: Disabled
   #   format: Latest
 
+  # Path-based authorization and deploy key settings
+  # note that group names are mapped to organization team names for Gitea repositories
+  # repositories:
+  #   'ownername/repositoryname':
+  #     deployKey: 1
+  #     access:
+  #       /:
+  #         '*': none
+  #         '@Owners': rw
+  #         '@Observers': r
+  #         '@Developers': rw
+  #       /path/to/secret:
+  #         '@Owners': rw
+  #         '@Observers': none
+  #         '@Developers': none
+  #       main:/:
+  #         '*': none
+  #         '@Owners': rw
+  #         '@Observers': r
+  #         '@Developers': r
+
 # Tells git-as-svn to use Gitea API for user authentication
 userDB: !giteaUsers {}
 
